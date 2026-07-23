@@ -87,6 +87,7 @@ export const SignUpView = () => {
       {
         onSuccess: () => {
           setPending(false);
+          router.push("/");
         },
         onError: ({ error }) => {
           setPending(false);
@@ -189,7 +190,7 @@ export const SignUpView = () => {
                 </div>
                 {!!error && (
                   <Alert className="bg-destructive/10 border-none">
-                    <OctagonAlertIcon className="h-4 w-4 !text-destructive" />
+                    <OctagonAlertIcon className="h-4 w-4 text-destructive!" />
                     <AlertTitle>{error}</AlertTitle>
                   </Alert>
                 )}
@@ -198,7 +199,7 @@ export const SignUpView = () => {
                   type="submit"
                   className="w-full"
                 >
-                  Sign in
+                  Sign up
                 </Button>
                 <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                   <span className="bg-card text-muted-foreground relative z-10 px-2">
@@ -235,8 +236,8 @@ export const SignUpView = () => {
             </form>
           </Form>
 
-          <div className="relative hidden md:flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 text-white overflow-hidden">
-            <img src="/logo.svg" alt="Image" className="h-[92px] w-[92px]" />
+          <div className="bg-radial from-sidebar-accent to-sidebar relative hidden md:flex flex-col gap-y-4 items-center justify-center">
+            <img src="/logo.svg" alt="Image" className="size-23" />
             <p className="text-2xl font-semibold text-white">
               Meet.AI
             </p>
