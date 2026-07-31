@@ -1,10 +1,22 @@
-export default function DashboardPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      <p className="mt-4 text-muted-foreground">
-        Welcome to your dashboard. Use the sidebar to navigate between Meetings, Agents, and Upgrade.
-      </p>
-    </div>
-  );
-}
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { auth } from "@/lib/auth";
+
+import { HomeView } from "@/modules/home/ui/views/home-view";
+
+// http://localhost:3000
+
+const Page = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    redirect("/sign-in");
+  }
+
+  return <HomeView />
+};
+ 
+export default Page;
