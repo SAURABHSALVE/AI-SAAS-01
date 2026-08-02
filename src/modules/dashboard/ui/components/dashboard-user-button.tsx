@@ -4,6 +4,7 @@ import { ChevronDownIcon, CreditCardIcon, LogOutIcon } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
