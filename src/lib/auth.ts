@@ -4,6 +4,10 @@ import { db } from "@/db"; // your drizzle instance
 import * as schema from "@/db/schema"; // your drizzle schema
 
 export const auth = betterAuth({
+    trustedOrigins: [
+      process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+      "http://localhost:3001",
+    ],
     socialProviders: {
         github: { 
             clientId: process.env.GITHUB_CLIENT_ID as string, 
@@ -25,4 +29,4 @@ export const auth = betterAuth({
         },
 
     }),
-});
+});

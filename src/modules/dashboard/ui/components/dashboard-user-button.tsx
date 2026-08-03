@@ -1,3 +1,5 @@
+"use client";
+
 import { useRouter } from "next/navigation";
 import { ChevronDownIcon, CreditCardIcon, LogOutIcon } from "lucide-react";
 
@@ -29,15 +31,10 @@ export const DashboardUserButton = () => {
   const isMobile = useIsMobile();
   const { data, isPending } = authClient.useSession();
 
-  const onLogout = () => {
-    authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/sign-in");
-        }
-      }
-    })
-  }
+  const onLogout = async () => {
+    await authClient.signOut();
+    router.push("/sign-in");
+  };
 
   if (isPending || !data?.user) {
     return null;

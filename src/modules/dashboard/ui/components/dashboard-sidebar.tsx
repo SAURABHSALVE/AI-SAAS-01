@@ -19,6 +19,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+import { DashboardUserButton } from "@/modules/dashboard/ui/components/dashboard-user-button";
+
 
 const firstSection = [
   {
@@ -119,7 +121,7 @@ export const DashboardSidebar = () => {
       </SidebarContent>
 
       <SidebarFooter>
-       
+        <DashboardUserButton />
       </SidebarFooter>
     </Sidebar>
   );
