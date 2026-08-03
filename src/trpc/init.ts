@@ -23,6 +23,7 @@ export const createCallerFactory = t.createCallerFactory;
 
 export const baseProcedure = t.procedure;
 
+
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.userId) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });

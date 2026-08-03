@@ -1,14 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { BotIcon, SearchIcon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { BotIcon } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
 
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
 import { ResponsiveDialog } from "@/components/responsive-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardDescription,
@@ -24,6 +37,125 @@ import {
 } from "@/components/ui/empty";
 import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import { useTRPC } from "@/trpc/client";
+import { agentSchema } from "@/modules/agents/schemas";
+
+const AgentCreateDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  const form = useForm<z.infer<typeof agentSchema>>({
+    resolver: zodResolver(agentSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      instructions: "",
+    },
+  });
+
+  const createAgent = useMutation(
+    trpc.agents.create.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.agents.getMany.queryKey(),
+        });
+
+        form.reset();
+        onOpenChange(false);
+      },
+    })
+  );
+
+  const onSubmit = (values: z.infer<typeof agentSchema>) => {
+    createAgent.mutate(values);
+  };
+
+  return (
+    <ResponsiveDialog
+      title="Create agent"
+      description="Create a new agent"
+      trigger={<Button>Create agent</Button>}
+      open={open}
+      onOpenChange={onOpenChange}
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Customer support assistant" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Handles order questions and refunds"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Optional short summary shown on the agent card.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="instructions"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Instructions</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Be concise, polite, and collect order details before responding."
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Optional system instructions used when the agent runs.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createAgent.isPending}>
+              {createAgent.isPending ? "Creating..." : "Create agent"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </ResponsiveDialog>
+  );
+};
 
 export const AgentsViewLoading = () => {
   return (
@@ -61,18 +193,8 @@ export const AgentsView = () => {
               You haven&apos;t created any agents. Create one to get started.
             </EmptyDescription>
 
-            {/* Dialog trigger placed inside the Empty State */}
             <div className="mt-4">
-              <ResponsiveDialog
-                title="Create agent"
-                description="Create a new agent"
-                trigger={<Button>Create agent</Button>}
-                open={open}
-                onOpenChange={setOpen}
-              >
-                {/* Place your Agent Creation Form component here */}
-                <div className="p-4">Agent creation form goes here</div>
-              </ResponsiveDialog>
+              <AgentCreateDialog open={open} onOpenChange={setOpen} />
             </div>
           </EmptyHeader>
         </Empty>
@@ -91,17 +213,7 @@ export const AgentsView = () => {
             </p>
           </div>
 
-          {/* Dialog trigger for when agents already exist */}
-          <ResponsiveDialog
-            title="Create agent"
-            description="Create a new agent"
-            trigger={<Button>Create agent</Button>}
-            open={open}
-            onOpenChange={setOpen}
-          >
-            {/* Place your Agent Creation Form component here */}
-            <div className="p-4">Agent creation form goes here</div>
-          </ResponsiveDialog>
+          <AgentCreateDialog open={open} onOpenChange={setOpen} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
