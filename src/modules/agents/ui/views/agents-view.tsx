@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { BotIcon } from "lucide-react";
+import { BotIcon, SearchIcon } from "lucide-react";
 
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
+import { ResponsiveDialog } from "@/components/responsive-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardDescription,
@@ -42,6 +46,7 @@ export const AgentsViewError = () => {
 export const AgentsView = () => {
   const trpc = useTRPC();
   const { data: agents } = useSuspenseQuery(trpc.agents.getMany.queryOptions());
+  const [open, setOpen] = useState(false);
 
   if (agents.length === 0) {
     return (
@@ -55,6 +60,20 @@ export const AgentsView = () => {
             <EmptyDescription>
               You haven&apos;t created any agents. Create one to get started.
             </EmptyDescription>
+
+            {/* Dialog trigger placed inside the Empty State */}
+            <div className="mt-4">
+              <ResponsiveDialog
+                title="Create agent"
+                description="Create a new agent"
+                trigger={<Button>Create agent</Button>}
+                open={open}
+                onOpenChange={setOpen}
+              >
+                {/* Place your Agent Creation Form component here */}
+                <div className="p-4">Agent creation form goes here</div>
+              </ResponsiveDialog>
+            </div>
           </EmptyHeader>
         </Empty>
       </div>
@@ -64,11 +83,25 @@ export const AgentsView = () => {
   return (
     <div className="flex-1 p-4 md:p-8">
       <div className="flex flex-col gap-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Agents</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your AI agents
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Agents</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your AI agents
+            </p>
+          </div>
+
+          {/* Dialog trigger for when agents already exist */}
+          <ResponsiveDialog
+            title="Create agent"
+            description="Create a new agent"
+            trigger={<Button>Create agent</Button>}
+            open={open}
+            onOpenChange={setOpen}
+          >
+            {/* Place your Agent Creation Form component here */}
+            <div className="p-4">Agent creation form goes here</div>
+          </ResponsiveDialog>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
