@@ -2,11 +2,17 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { BotIcon } from "lucide-react";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { BotIcon, Loader2Icon, SearchIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
 import { ResponsiveDialog } from "@/components/responsive-dialog";
@@ -177,10 +183,21 @@ export const AgentsViewError = () => {
 
 export const AgentsView = () => {
   const trpc = useTRPC();
-  const { data: agents } = useSuspenseQuery(trpc.agents.getMany.queryOptions());
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const { data: agents, isFetching } = useQuery({
+    ...trpc.agents.getMany.queryOptions({
+      search: debouncedSearch || undefined,
+    }),
+    placeholderData: keepPreviousData,
+  });
   const [open, setOpen] = useState(false);
 
-  if (agents.length === 0) {
+  if (!agents) {
+    return <AgentsViewLoading />;
+  }
+
+  if (agents.length === 0 && !search) {
     return (
       <div className="flex-1 p-4 md:p-8">
         <Empty className="border">
@@ -216,6 +233,32 @@ export const AgentsView = () => {
           <AgentCreateDialog open={open} onOpenChange={setOpen} />
         </div>
 
+        <div className="relative max-w-sm">
+          <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Filter agents by name..."
+            className="pl-8 pr-8"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {isFetching && (
+            <Loader2Icon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          )}
+        </div>
+
+        {agents.length === 0 ? (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <SearchIcon />
+              </EmptyMedia>
+              <EmptyTitle>No agents found</EmptyTitle>
+              <EmptyDescription>
+                No agents match &quot;{search}&quot;. Try a different search.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {agents.map((agent) => (
             <Card key={agent.id} className="h-full">
@@ -237,6 +280,7 @@ export const AgentsView = () => {
             </Card>
           ))}
         </div>
+        )}
       </div>
     </div>
   );
