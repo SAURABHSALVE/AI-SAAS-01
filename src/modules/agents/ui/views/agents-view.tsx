@@ -8,7 +8,14 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { BotIcon, Loader2Icon, SearchIcon } from "lucide-react";
+import {
+  BotIcon,
+  Loader2Icon,
+  MoreVerticalIcon,
+  PencilIcon,
+  SearchIcon,
+  TrashIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { z } from "zod";
 
@@ -25,6 +32,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -35,6 +48,8 @@ import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import { useTRPC } from "@/trpc/client";
 import { agentSchema } from "@/modules/agents/schemas";
 import { AgentForm } from "@/modules/agents/ui/components/agent-form";
+import { DeleteAgentDialog } from "@/modules/agents/ui/components/delete-agent-dialog";
+import type { AgentGetMany } from "@/modules/agents/types";
 
 const AgentCreateDialog = ({
   open,
@@ -85,6 +100,66 @@ const AgentCreateDialog = ({
   );
 };
 
+interface AgentCardProps {
+  agent: AgentGetMany;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const AgentCard = ({ agent, onEdit, onDelete }: AgentCardProps) => {
+  return (
+    <Card className="h-full transition-colors hover:border-primary/50 hover:shadow-sm">
+      <CardHeader className="flex-row items-start gap-4 space-y-0">
+        <GeneratedAvatar
+          seed={agent.name}
+          variant="botttsNeutral"
+          className="size-10"
+        />
+        <div className="min-w-0 flex-1 space-y-1">
+          <Link
+            href={`/agents/${agent.id}`}
+            className="line-clamp-1 font-medium underline-offset-4 hover:underline"
+          >
+            <CardTitle className="truncate">{agent.name}</CardTitle>
+          </Link>
+          {agent.description ? (
+            <CardDescription className="line-clamp-2">
+              {agent.description}
+            </CardDescription>
+          ) : (
+            <CardDescription className="italic">
+              No description
+            </CardDescription>
+          )}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
+              aria-label="Agent actions"
+            >
+              <MoreVerticalIcon className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>
+              <PencilIcon className="size-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+              <TrashIcon className="size-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+    </Card>
+  );
+};
+
 export const AgentsViewLoading = () => {
   return (
     <LoadingState
@@ -105,6 +180,7 @@ export const AgentsViewError = () => {
 
 export const AgentsView = () => {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const { data: agents, isFetching } = useQuery({
@@ -114,6 +190,38 @@ export const AgentsView = () => {
     placeholderData: keepPreviousData,
   });
   const [open, setOpen] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<AgentGetMany | null>(null);
+  const [deletingAgent, setDeletingAgent] = useState<AgentGetMany | null>(null);
+
+  const updateAgent = useMutation(
+    trpc.agents.update.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.agents.getMany.queryKey(),
+        });
+        toast.success("Agent updated");
+        setEditingAgent(null);
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to update agent");
+      },
+    })
+  );
+
+  const removeAgent = useMutation(
+    trpc.agents.remove.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.agents.getMany.queryKey(),
+        });
+        toast.success("Agent deleted");
+        setDeletingAgent(null);
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to delete agent");
+      },
+    })
+  );
 
   if (!agents) {
     return <AgentsViewLoading />;
@@ -188,33 +296,48 @@ export const AgentsView = () => {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {agents.map((agent) => (
-              <Link key={agent.id} href={`/agents/${agent.id}`}>
-                <Card className="h-full transition-colors hover:border-primary/50 hover:shadow-sm">
-                  <CardHeader className="flex-row items-start gap-4 space-y-0">
-                    <GeneratedAvatar
-                      seed={agent.name}
-                      variant="botttsNeutral"
-                      className="size-10"
-                    />
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <CardTitle className="truncate">{agent.name}</CardTitle>
-                      {agent.description ? (
-                        <CardDescription className="line-clamp-2">
-                          {agent.description}
-                        </CardDescription>
-                      ) : (
-                        <CardDescription className="italic">
-                          No description
-                        </CardDescription>
-                      )}
-                    </div>
-                  </CardHeader>
-                </Card>
-              </Link>
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                onEdit={() => setEditingAgent(agent)}
+                onDelete={() => setDeletingAgent(agent)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      <ResponsiveDialog
+        title="Edit agent"
+        description="Update this agent's details"
+        open={!!editingAgent}
+        onOpenChange={(isOpen) => !isOpen && setEditingAgent(null)}
+      >
+        {editingAgent && (
+          <AgentForm
+            defaultValues={{
+              name: editingAgent.name,
+              description: editingAgent.description ?? "",
+              instructions: editingAgent.instructions ?? "",
+            }}
+            onSubmit={(values: z.infer<typeof agentSchema>) =>
+              updateAgent.mutate({ id: editingAgent.id, ...values })
+            }
+            onCancel={() => setEditingAgent(null)}
+            isPending={updateAgent.isPending}
+            submitLabel="Save changes"
+            pendingLabel="Saving..."
+          />
+        )}
+      </ResponsiveDialog>
+
+      <DeleteAgentDialog
+        open={!!deletingAgent}
+        onOpenChange={(isOpen) => !isOpen && setDeletingAgent(null)}
+        agentName={deletingAgent?.name ?? ""}
+        onConfirm={() => deletingAgent && removeAgent.mutate({ id: deletingAgent.id })}
+        isPending={removeAgent.isPending}
+      />
     </div>
   );
 };
