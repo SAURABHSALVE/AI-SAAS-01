@@ -5,6 +5,7 @@ import {
   type Call,
   CallingState,
   StreamCall,
+  StreamTheme,
   useCall,
   useCallStateHooks,
   useStreamVideoClient,
@@ -27,7 +28,7 @@ const CallUI = ({ meetingId, meetingTitle }: CallViewProps) => {
   const [hasLeft, setHasLeft] = useState(false);
 
   const handleJoin = () => {
-    void call?.join();
+    void call?.join({ create: true });
   };
 
   const handleLeave = () => {
@@ -56,8 +57,6 @@ export const CallView = ({ meetingId, meetingTitle }: CallViewProps) => {
     if (!client) return;
 
     const nextCall = client.call("default", meetingId);
-    nextCall.camera.disable();
-    nextCall.microphone.disable();
     setCall(nextCall);
 
     return () => {
@@ -75,8 +74,10 @@ export const CallView = ({ meetingId, meetingTitle }: CallViewProps) => {
   }
 
   return (
-    <StreamCall call={call}>
-      <CallUI meetingId={meetingId} meetingTitle={meetingTitle} />
-    </StreamCall>
+    <StreamTheme className="h-full">
+      <StreamCall call={call}>
+        <CallUI meetingId={meetingId} meetingTitle={meetingTitle} />
+      </StreamCall>
+    </StreamTheme>
   );
 };

@@ -24,6 +24,7 @@ import {
 import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getMeetingStatus } from "@/modules/meetings/lib/get-meeting-status";
+import { getJoinLabel } from "@/modules/meetings/lib/get-join-label";
 import { MeetingStatusBadge } from "@/modules/meetings/ui/components/meeting-status-badge";
 import type { MeetingGetMany } from "@/modules/meetings/types";
 
@@ -126,19 +127,17 @@ export const MeetingCard = ({ meeting, onEdit, onDelete }: MeetingCardProps) => 
           <MeetingStatusBadge status={status} />
         </div>
 
-        {status === "active" ? (
-          <Button size="sm" className="w-full" asChild>
-            <Link href={`/call/${meeting.id}`}>
-              <VideoIcon className="size-4" />
-              Join meeting
-            </Link>
-          </Button>
-        ) : (
-          <Button size="sm" variant="outline" disabled className="w-full">
+        <Button
+          size="sm"
+          variant={status === "active" ? "default" : "outline"}
+          className="w-full"
+          asChild
+        >
+          <Link href={`/call/${meeting.id}`}>
             <VideoIcon className="size-4" />
-            {status === "completed" ? "Meeting ended" : "Join meeting"}
-          </Button>
-        )}
+            {getJoinLabel(status)}
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   );
