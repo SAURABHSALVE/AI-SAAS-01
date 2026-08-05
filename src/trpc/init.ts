@@ -25,7 +25,7 @@ export const baseProcedure = t.procedure;
 
 
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.userId) {
+  if (!ctx.userId || !ctx.session) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
 
@@ -33,6 +33,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     ctx: {
       ...ctx,
       userId: ctx.userId,
+      session: ctx.session,
     },
   });
 });

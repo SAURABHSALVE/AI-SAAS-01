@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { agents, meetings, user } from "@/db/schema";
+import { streamVideo } from "@/lib/stream-video";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { meetingSchema, meetingUpdateSchema } from "../schemas";
 import { combineDateAndTime } from "../lib/meeting-datetime";
@@ -91,6 +92,26 @@ export const meetingsRouter = createTRPCRouter({
 
       return existingMeeting;
     }),
+
+  generateToken: protectedProcedure.mutation(async ({ ctx }) => {
+    await streamVideo.upsertUsers([
+      {
+        id: ctx.userId,
+        name: ctx.session.user.name,
+        image: ctx.session.user.image ?? undefined,
+        role: "admin",
+      },
+    ]);
+
+    const expirationTime = Math.floor(Date.now() / 1000) + 60 * 60;
+    const issuedAt = Math.floor(Date.now() / 1000) - 60;
+
+    return streamVideo.generateUserToken({
+      user_id: ctx.userId,
+      exp: expirationTime,
+      iat: issuedAt,
+    });
+  }),
 
   create: protectedProcedure
     .input(meetingSchema)
