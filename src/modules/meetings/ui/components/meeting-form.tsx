@@ -2,6 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import type { z } from "zod";
@@ -18,6 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -28,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useTRPC } from "@/trpc/client";
 import { DURATION_OPTIONS } from "@/modules/meetings/constants";
 import { meetingSchema } from "@/modules/meetings/schemas";
 import { ParticipantsInput } from "@/modules/meetings/ui/components/participants-input";
@@ -51,6 +54,9 @@ export const MeetingForm = ({
   submitLabel,
   pendingLabel,
 }: MeetingFormProps) => {
+  const trpc = useTRPC();
+  const { data: agents } = useQuery(trpc.agents.getMany.queryOptions({}));
+
   const form = useForm<MeetingFormValues>({
     resolver: zodResolver(meetingSchema),
     defaultValues: {
@@ -60,6 +66,7 @@ export const MeetingForm = ({
       time: defaultValues?.time ?? "",
       duration: defaultValues?.duration ?? 30,
       participants: defaultValues?.participants ?? [],
+      agentId: defaultValues?.agentId,
     },
   });
 
@@ -177,6 +184,45 @@ export const MeetingForm = ({
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="agentId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Agent</FormLabel>
+              <Select
+                value={field.value ?? "none"}
+                onValueChange={(value) =>
+                  field.onChange(value === "none" ? undefined : value)
+                }
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="No agent" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="none">No agent</SelectItem>
+                  {agents?.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      <GeneratedAvatar
+                        seed={agent.name}
+                        variant="botttsNeutral"
+                        className="size-4"
+                      />
+                      {agent.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Optionally assign an AI agent to join and assist this meeting.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

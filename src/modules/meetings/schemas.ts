@@ -13,6 +13,7 @@ export const meetingSchema = z.object({
   participants: z
     .array(z.string().email("Enter a valid email"))
     .min(1, "Add at least one participant"),
+  agentId: z.string().optional(),
 });
 
 export const meetingUpdateSchema = meetingSchema.extend({

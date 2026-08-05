@@ -114,6 +114,7 @@ export const meetings = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -123,5 +124,6 @@ export const meetings = pgTable(
   (table) => [
     index("meetings_userId_idx").on(table.userId),
     index("meetings_startsAt_idx").on(table.startsAt),
+    index("meetings_agentId_idx").on(table.agentId),
   ],
 );

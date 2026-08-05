@@ -244,6 +244,7 @@ export const MeetingsView = () => {
               description: editingMeeting.description ?? "",
               participants: editingMeeting.participants,
               duration: editingMeeting.durationMinutes,
+              agentId: editingMeeting.agent?.id,
               ...splitDateAndTime(new Date(editingMeeting.startsAt)),
             }}
             onSubmit={(values: z.infer<typeof meetingSchema>) =>
