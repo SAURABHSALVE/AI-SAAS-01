@@ -1,0 +1,1 @@
+import {StremClient} from "@stream-io/video-client";

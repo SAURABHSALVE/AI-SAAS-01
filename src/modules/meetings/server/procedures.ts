@@ -3,7 +3,7 @@ import { and, desc, eq, gt, gte, ilike, lt, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { meetings, user } from "@/db/schema";
+import { agents, meetings, user } from "@/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { meetingSchema, meetingUpdateSchema } from "../schemas";
 import { combineDateAndTime } from "../lib/meeting-datetime";
@@ -27,6 +27,10 @@ const meetingSelection = {
     email: user.email,
     image: user.image,
   },
+  agent: {
+    id: agents.id,
+    name: agents.name,
+  },
 };
 
 export const meetingsRouter = createTRPCRouter({
@@ -46,10 +50,11 @@ export const meetingsRouter = createTRPCRouter({
       const filter = input?.filter ?? "all";
       const durationFilter = input?.durationFilter ?? "any";
 
-      const data = await db
+      const rows = await db
         .select(meetingSelection)
         .from(meetings)
         .innerJoin(user, eq(meetings.userId, user.id))
+        .leftJoin(agents, eq(meetings.agentId, agents.id))
         .where(
           and(
             eq(meetings.userId, ctx.userId),
@@ -67,7 +72,7 @@ export const meetingsRouter = createTRPCRouter({
           filter === "past" ? desc(meetings.startsAt) : meetings.startsAt
         );
 
-      return data;
+      return rows;
     }),
 
   getOne: protectedProcedure
@@ -77,6 +82,7 @@ export const meetingsRouter = createTRPCRouter({
         .select(meetingSelection)
         .from(meetings)
         .innerJoin(user, eq(meetings.userId, user.id))
+        .leftJoin(agents, eq(meetings.agentId, agents.id))
         .where(and(eq(meetings.id, input.id), eq(meetings.userId, ctx.userId)));
 
       if (!existingMeeting) {
@@ -89,7 +95,18 @@ export const meetingsRouter = createTRPCRouter({
   create: protectedProcedure
     .input(meetingSchema)
     .mutation(async ({ ctx, input }) => {
-      const { date, time, duration, ...values } = input;
+      const { date, time, duration, agentId, ...values } = input;
+
+      if (agentId) {
+        const [ownedAgent] = await db
+          .select({ id: agents.id })
+          .from(agents)
+          .where(and(eq(agents.id, agentId), eq(agents.userId, ctx.userId)));
+
+        if (!ownedAgent) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        }
+      }
 
       const [createdMeeting] = await db
         .insert(meetings)
@@ -98,6 +115,7 @@ export const meetingsRouter = createTRPCRouter({
           durationMinutes: duration,
           startsAt: combineDateAndTime(date, time),
           userId: ctx.userId,
+          agentId: agentId ?? null,
         })
         .returning();
 
@@ -107,7 +125,18 @@ export const meetingsRouter = createTRPCRouter({
   update: protectedProcedure
     .input(meetingUpdateSchema)
     .mutation(async ({ ctx, input }) => {
-      const { id, date, time, duration, ...values } = input;
+      const { id, date, time, duration, agentId, ...values } = input;
+
+      if (agentId) {
+        const [ownedAgent] = await db
+          .select({ id: agents.id })
+          .from(agents)
+          .where(and(eq(agents.id, agentId), eq(agents.userId, ctx.userId)));
+
+        if (!ownedAgent) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        }
+      }
 
       const [updatedMeeting] = await db
         .update(meetings)
@@ -115,6 +144,7 @@ export const meetingsRouter = createTRPCRouter({
           ...values,
           durationMinutes: duration,
           startsAt: combineDateAndTime(date, time),
+          agentId: agentId ?? null,
         })
         .where(and(eq(meetings.id, id), eq(meetings.userId, ctx.userId)))
         .returning();

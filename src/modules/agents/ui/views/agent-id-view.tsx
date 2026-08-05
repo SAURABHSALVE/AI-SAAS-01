@@ -14,6 +14,7 @@ import {
   PencilIcon,
   SparklesIcon,
   TrashIcon,
+  VideoIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -139,10 +140,17 @@ export const AgentIdView = ({ agentId }: Props) => {
                 />
                 <div className="space-y-1.5">
                   <h1 className="text-2xl font-semibold">{agent.name}</h1>
-                  <Badge variant="secondary" className="gap-1.5">
-                    <SparklesIcon className="size-3" />
-                    AI Agent
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary" className="gap-1.5">
+                      <SparklesIcon className="size-3" />
+                      AI Agent
+                    </Badge>
+                    <Badge variant="outline" className="gap-1.5 font-normal">
+                      <VideoIcon className="size-3" />
+                      Used in {agent.meetingCount} meeting
+                      {agent.meetingCount === 1 ? "" : "s"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 

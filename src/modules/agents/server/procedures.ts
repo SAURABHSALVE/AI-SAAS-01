@@ -1,9 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, ilike } from "drizzle-orm";
+import { and, eq, getTableColumns, ilike, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { agents } from "@/db/schema";
+import { agents, meetings } from "@/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { agentSchema, agentUpdateSchema } from "../schemas";
 
@@ -31,9 +31,14 @@ export const agentsRouter = createTRPCRouter({
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       const [existingAgent] = await db
-        .select()
+        .select({
+          ...getTableColumns(agents),
+          meetingCount: sql<number>`cast(count(${meetings.id}) as int)`,
+        })
         .from(agents)
-        .where(and(eq(agents.id, input.id), eq(agents.userId, ctx.userId)));
+        .leftJoin(meetings, eq(meetings.agentId, agents.id))
+        .where(and(eq(agents.id, input.id), eq(agents.userId, ctx.userId)))
+        .groupBy(agents.id);
 
       if (!existingAgent) {
         throw new TRPCError({

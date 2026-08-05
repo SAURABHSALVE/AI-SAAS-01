@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
+  BotIcon,
   CalendarIcon,
   ChevronRightIcon,
   ClockIcon,
@@ -149,6 +150,12 @@ export const MeetingIdView = ({ meetingId }: Props) => {
                     />
                     Hosted by {meeting.host.name}
                   </Badge>
+                  {meeting.agent && (
+                    <Badge variant="outline" className="gap-1.5 font-normal">
+                      <BotIcon className="size-3.5" />
+                      {meeting.agent.name}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -243,6 +250,7 @@ export const MeetingIdView = ({ meetingId }: Props) => {
             description: meeting.description ?? "",
             participants: meeting.participants,
             duration: meeting.durationMinutes,
+            agentId: meeting.agent?.id,
             ...splitDateAndTime(startsAt),
           }}
           onSubmit={onUpdate}
