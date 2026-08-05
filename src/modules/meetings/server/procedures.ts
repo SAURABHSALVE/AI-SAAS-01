@@ -93,6 +93,25 @@ export const meetingsRouter = createTRPCRouter({
       return existingMeeting;
     }),
 
+  getRecordings: protectedProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const [existingMeeting] = await db
+        .select({ id: meetings.id })
+        .from(meetings)
+        .where(and(eq(meetings.id, input.id), eq(meetings.userId, ctx.userId)));
+
+      if (!existingMeeting) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
+      }
+
+      const { recordings } = await streamVideo.video
+        .call("default", input.id)
+        .listRecordings();
+
+      return recordings;
+    }),
+
   generateToken: protectedProcedure.mutation(async ({ ctx }) => {
     await streamVideo.upsertUsers([
       {

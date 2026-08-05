@@ -37,11 +37,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import { useTRPC } from "@/trpc/client";
+import { getJoinLabel } from "@/modules/meetings/lib/get-join-label";
 import { getMeetingStatus } from "@/modules/meetings/lib/get-meeting-status";
 import { splitDateAndTime } from "@/modules/meetings/lib/meeting-datetime";
 import { meetingSchema } from "@/modules/meetings/schemas";
 import { DeleteMeetingDialog } from "@/modules/meetings/ui/components/delete-meeting-dialog";
 import { MeetingForm } from "@/modules/meetings/ui/components/meeting-form";
+import { MeetingRecordings } from "@/modules/meetings/ui/components/meeting-recordings";
 import { MeetingStatusBadge } from "@/modules/meetings/ui/components/meeting-status-badge";
 
 interface Props {
@@ -181,19 +183,16 @@ export const MeetingIdView = ({ meetingId }: Props) => {
               </DropdownMenu>
             </div>
 
-            {status === "active" ? (
-              <Button className="w-full sm:w-fit" asChild>
-                <Link href={`/call/${meetingId}`}>
-                  <VideoIcon className="size-4" />
-                  Join meeting
-                </Link>
-              </Button>
-            ) : (
-              <Button disabled variant="outline" className="w-full sm:w-fit">
+            <Button
+              variant={status === "active" ? "default" : "outline"}
+              className="w-full sm:w-fit"
+              asChild
+            >
+              <Link href={`/call/${meetingId}`}>
                 <VideoIcon className="size-4" />
-                {status === "completed" ? "Meeting ended" : "Join meeting"}
-              </Button>
-            )}
+                {getJoinLabel(status)}
+              </Link>
+            </Button>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
@@ -243,6 +242,8 @@ export const MeetingIdView = ({ meetingId }: Props) => {
                 ))}
               </div>
             </div>
+
+            {status !== "upcoming" && <MeetingRecordings meetingId={meetingId} />}
           </CardContent>
         </Card>
       </div>
