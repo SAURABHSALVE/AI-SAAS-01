@@ -126,15 +126,19 @@ export const MeetingCard = ({ meeting, onEdit, onDelete }: MeetingCardProps) => 
           <MeetingStatusBadge status={status} />
         </div>
 
-        <Button
-          size="sm"
-          variant={status === "active" ? "default" : "outline"}
-          disabled={status !== "active"}
-          className="w-full"
-        >
-          <VideoIcon className="size-4" />
-          {status === "completed" ? "Meeting ended" : "Join meeting"}
-        </Button>
+        {status === "active" ? (
+          <Button size="sm" className="w-full" asChild>
+            <Link href={`/call/${meeting.id}`}>
+              <VideoIcon className="size-4" />
+              Join meeting
+            </Link>
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline" disabled className="w-full">
+            <VideoIcon className="size-4" />
+            {status === "completed" ? "Meeting ended" : "Join meeting"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

@@ -181,10 +181,19 @@ export const MeetingIdView = ({ meetingId }: Props) => {
               </DropdownMenu>
             </div>
 
-            <Button disabled={status !== "active"} className="w-full sm:w-fit">
-              <VideoIcon className="size-4" />
-              {status === "completed" ? "Meeting ended" : "Join meeting"}
-            </Button>
+            {status === "active" ? (
+              <Button className="w-full sm:w-fit" asChild>
+                <Link href={`/call/${meetingId}`}>
+                  <VideoIcon className="size-4" />
+                  Join meeting
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled variant="outline" className="w-full sm:w-fit">
+                <VideoIcon className="size-4" />
+                {status === "completed" ? "Meeting ended" : "Join meeting"}
+              </Button>
+            )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
