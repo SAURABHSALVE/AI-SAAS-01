@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
 import {nanoid } from "nanoid";
 
 
@@ -98,3 +98,30 @@ export const agents = pgTable("agents",{
       .$onUpdate(() => new Date())
       .notNull(),
 })
+
+
+export const meetings = pgTable(
+  "meetings",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    title: text("title").notNull(),
+    description: text("description"),
+    startsAt: timestamp("starts_at").notNull(),
+    durationMinutes: integer("duration_minutes").notNull(),
+    participants: text("participants").array().notNull().default([]),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("meetings_userId_idx").on(table.userId),
+    index("meetings_startsAt_idx").on(table.startsAt),
+  ],
+);
