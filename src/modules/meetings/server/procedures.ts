@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, gt, gte, ilike, lt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, ilike, lt, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -20,6 +20,8 @@ const meetingSelection = {
   durationMinutes: meetings.durationMinutes,
   participants: meetings.participants,
   userId: meetings.userId,
+  processingStatus: meetings.processingStatus,
+  processingError: meetings.processingError,
   createdAt: meetings.createdAt,
   updatedAt: meetings.updatedAt,
   host: {
@@ -112,25 +114,50 @@ export const meetingsRouter = createTRPCRouter({
       return recordings;
     }),
 
-  generateToken: protectedProcedure.mutation(async ({ ctx }) => {
-    await streamVideo.upsertUsers([
-      {
-        id: ctx.userId,
-        name: ctx.session.user.name,
-        image: ctx.session.user.image ?? undefined,
-        role: "admin",
-      },
-    ]);
+  generateToken: protectedProcedure
+    .input(z.object({ meetingId: z.string().min(1) }).optional())
+    .mutation(async ({ ctx, input }) => {
+      await streamVideo.upsertUsers([
+        {
+          id: ctx.userId,
+          name: ctx.session.user.name,
+          image: ctx.session.user.image ?? undefined,
+          role: "admin",
+        },
+      ]);
 
-    const expirationTime = Math.floor(Date.now() / 1000) + 60 * 60;
-    const issuedAt = Math.floor(Date.now() / 1000) - 60;
+      if (input?.meetingId) {
+        const [ownedMeeting] = await db
+          .select({ id: meetings.id })
+          .from(meetings)
+          .where(and(eq(meetings.id, input.meetingId), eq(meetings.userId, ctx.userId)));
 
-    return streamVideo.generateUserToken({
-      user_id: ctx.userId,
-      exp: expirationTime,
-      iat: issuedAt,
-    });
-  }),
+        if (!ownedMeeting) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
+        }
+
+        // Server-authoritative: ensures the call exists, then always (re-)applies the
+        // transcription setting. `getOrCreate`'s settings_override only takes effect the
+        // moment the call is first created — on every later join it would be a no-op — so
+        // `update` runs unconditionally to guarantee transcription is actually on.
+        const streamCall = streamVideo.video.call("default", input.meetingId);
+        await streamCall.getOrCreate({ data: { created_by_id: ctx.userId } });
+        await streamCall.update({
+          settings_override: {
+            transcription: { mode: "auto-on", language: "auto" },
+          },
+        });
+      }
+
+      const expirationTime = Math.floor(Date.now() / 1000) + 60 * 60;
+      const issuedAt = Math.floor(Date.now() / 1000) - 60;
+
+      return streamVideo.generateUserToken({
+        user_id: ctx.userId,
+        exp: expirationTime,
+        iat: issuedAt,
+      });
+    }),
 
   create: protectedProcedure
     .input(meetingSchema)
@@ -138,12 +165,17 @@ export const meetingsRouter = createTRPCRouter({
       const { date, time, duration, agentId, ...values } = input;
 
       if (agentId) {
-        const [ownedAgent] = await db
+        const [accessibleAgent] = await db
           .select({ id: agents.id })
           .from(agents)
-          .where(and(eq(agents.id, agentId), eq(agents.userId, ctx.userId)));
+          .where(
+            and(
+              eq(agents.id, agentId),
+              or(eq(agents.ownerId, ctx.userId), eq(agents.visibility, "public"))
+            )
+          );
 
-        if (!ownedAgent) {
+        if (!accessibleAgent) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
         }
       }
@@ -168,12 +200,17 @@ export const meetingsRouter = createTRPCRouter({
       const { id, date, time, duration, agentId, ...values } = input;
 
       if (agentId) {
-        const [ownedAgent] = await db
+        const [accessibleAgent] = await db
           .select({ id: agents.id })
           .from(agents)
-          .where(and(eq(agents.id, agentId), eq(agents.userId, ctx.userId)));
+          .where(
+            and(
+              eq(agents.id, agentId),
+              or(eq(agents.ownerId, ctx.userId), eq(agents.visibility, "public"))
+            )
+          );
 
-        if (!ownedAgent) {
+        if (!accessibleAgent) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
         }
       }

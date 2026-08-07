@@ -2,23 +2,15 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { agentSchema } from "@/modules/agents/schemas";
-
-type AgentFormValues = z.infer<typeof agentSchema>;
+import { Form } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { agentSchema, type AgentFormValues } from "@/modules/agents/schemas";
+import { AgentFormBehaviorSection } from "@/modules/agents/ui/components/agent-form-behavior-section";
+import { AgentFormIdentitySection } from "@/modules/agents/ui/components/agent-form-identity-section";
+import { AgentFormModelSection } from "@/modules/agents/ui/components/agent-form-model-section";
+import { AgentFormVisibilitySection } from "@/modules/agents/ui/components/agent-form-visibility-section";
 
 interface AgentFormProps {
   defaultValues?: Partial<AgentFormValues>;
@@ -41,69 +33,57 @@ export const AgentForm = ({
     resolver: zodResolver(agentSchema),
     defaultValues: {
       name: defaultValues?.name ?? "",
+      role: defaultValues?.role ?? "",
       description: defaultValues?.description ?? "",
-      instructions: defaultValues?.instructions ?? "",
+      category: defaultValues?.category ?? "general",
+      systemPrompt: defaultValues?.systemPrompt ?? "",
+      personality: defaultValues?.personality ?? "",
+      greeting: defaultValues?.greeting ?? "",
+      suggestedQuestions: defaultValues?.suggestedQuestions ?? [],
+      model: defaultValues?.model ?? "gemini-2.5-flash",
+      temperature: defaultValues?.temperature ?? 0.7,
+      voice: defaultValues?.voice ?? "Puck",
+      avatar: defaultValues?.avatar ?? "",
+      visibility: defaultValues?.visibility ?? "private",
     },
   });
+
+  const nameValue = form.watch("name");
+  const avatarValue = form.watch("avatar");
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Customer support assistant" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Tabs defaultValue="identity">
+          <TabsList className="w-full">
+            <TabsTrigger value="identity">Identity</TabsTrigger>
+            <TabsTrigger value="behavior">Behavior</TabsTrigger>
+            <TabsTrigger value="model">Model &amp; voice</TabsTrigger>
+            <TabsTrigger value="visibility">Visibility</TabsTrigger>
+          </TabsList>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Handles order questions and refunds"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Optional short summary shown on the agent card.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <TabsContent value="identity" className="pt-4">
+            <AgentFormIdentitySection
+              control={form.control}
+              nameValue={nameValue}
+              avatarValue={avatarValue}
+            />
+          </TabsContent>
 
-        <FormField
-          control={form.control}
-          name="instructions"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Instructions</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Be concise, polite, and collect order details before responding."
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Optional system instructions used when the agent runs.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <TabsContent value="behavior" className="pt-4">
+            <AgentFormBehaviorSection control={form.control} />
+          </TabsContent>
 
-        <div className="flex justify-end gap-2">
+          <TabsContent value="model" className="pt-4">
+            <AgentFormModelSection control={form.control} />
+          </TabsContent>
+
+          <TabsContent value="visibility" className="pt-4">
+            <AgentFormVisibilitySection control={form.control} />
+          </TabsContent>
+        </Tabs>
+
+        <div className="flex justify-end gap-2 border-t pt-4">
           {onCancel && (
             <Button type="button" variant="ghost" onClick={onCancel}>
               Cancel
