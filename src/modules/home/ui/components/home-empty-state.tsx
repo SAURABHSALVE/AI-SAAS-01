@@ -16,12 +16,15 @@ interface HomeEmptyStateProps {
 
 export const HomeEmptyState = ({ onCreateMeeting, onCreateAgent }: HomeEmptyStateProps) => {
   return (
-    <Empty className="border py-16">
+    <Empty className="border bg-linear-to-b from-primary/5 to-transparent py-16">
       <EmptyHeader>
-        <EmptyMedia variant="icon">
+        <EmptyMedia
+          variant="icon"
+          className="size-14 rounded-2xl bg-primary/10 text-primary [&_svg:not([class*='size-'])]:size-7"
+        >
           <SparklesIcon />
         </EmptyMedia>
-        <EmptyTitle>Welcome to Meet.AI</EmptyTitle>
+        <EmptyTitle className="text-xl">Welcome to Meet.AI</EmptyTitle>
         <EmptyDescription>
           Schedule a meeting or create an AI agent to get started. Meet.AI
           transcribes your calls, generates insights automatically, and lets

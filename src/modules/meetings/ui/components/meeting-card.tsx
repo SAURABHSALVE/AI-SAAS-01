@@ -39,12 +39,12 @@ export const MeetingCard = ({ meeting, onEdit, onDelete }: MeetingCardProps) => 
   const status = getMeetingStatus(startsAt, meeting.durationMinutes);
 
   return (
-    <Card className="transition-colors hover:border-primary/50 hover:shadow-sm">
+    <Card className="group transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
       <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
         <div className="min-w-0 flex-1 space-y-1.5">
           <Link
             href={`/meetings/${meeting.id}`}
-            className="line-clamp-1 font-medium underline-offset-4 hover:underline"
+            className="line-clamp-1 font-medium underline-offset-4 transition-colors group-hover:text-primary hover:underline"
           >
             {meeting.title}
           </Link>

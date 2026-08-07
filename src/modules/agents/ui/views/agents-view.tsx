@@ -50,9 +50,12 @@ export const AgentsViewError = () => {
 export const CreateAgentDialog = ({
   open,
   onOpenChange,
+  showTrigger = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Set false when the caller renders its own button to open this dialog. */
+  showTrigger?: boolean;
 }) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -81,10 +84,12 @@ export const CreateAgentDialog = ({
       title="Create agent"
       description="Create a new AI agent"
       trigger={
-        <Button>
-          <PlusIcon className="size-4" />
-          Create agent
-        </Button>
+        showTrigger ? (
+          <Button>
+            <PlusIcon className="size-4" />
+            Create agent
+          </Button>
+        ) : undefined
       }
       open={open}
       onOpenChange={(next) => {
@@ -192,7 +197,7 @@ export const AgentsView = () => {
       <div className="flex flex-col gap-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Agents</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
             <p className="text-sm text-muted-foreground">
               Manage your AI agents and browse the public gallery
             </p>
@@ -217,12 +222,12 @@ export const AgentsView = () => {
           <AgentsEmptyState variant="no-public-agents" />
         ) : (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3">
               <div className="relative max-w-sm flex-1">
                 <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search agents by name..."
-                  className="pl-8 pr-8"
+                  className="border-none bg-background pl-8 pr-8 shadow-none"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />

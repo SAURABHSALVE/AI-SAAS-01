@@ -27,18 +27,18 @@ export const AgentCard = ({ agent, onEdit, onDelete }: AgentCardProps) => {
     CATEGORY_OPTIONS.find((c) => c.value === agent.category)?.label ?? agent.category;
 
   return (
-    <Card className="h-full transition-colors hover:border-primary/50 hover:shadow-sm">
+    <Card className="group h-full transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
       <CardHeader className="flex-row items-start gap-4 space-y-0">
         <GeneratedAvatar
           seed={agent.avatar || agent.name}
           variant="botttsNeutral"
-          className="size-10"
+          className="size-10 ring-2 ring-transparent transition-all group-hover:ring-primary/20"
         />
 
         <div className="min-w-0 flex-1 space-y-1.5">
           <Link
             href={`/agents/${agent.id}`}
-            className="line-clamp-1 font-medium underline-offset-4 hover:underline"
+            className="line-clamp-1 font-medium underline-offset-4 transition-colors group-hover:text-primary hover:underline"
           >
             <CardTitle className="truncate">{agent.name}</CardTitle>
           </Link>

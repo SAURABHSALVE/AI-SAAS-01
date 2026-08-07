@@ -10,7 +10,7 @@ export const DashboardNavbar = () => {
   const { state, toggleSidebar, isMobile } = useSidebar();
 
   return (
-    <nav className="flex items-center justify-between px-4 py-3 border-b bg-background">
+    <nav className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur-sm">
       <Button
         variant="outline"
         className="size-9"

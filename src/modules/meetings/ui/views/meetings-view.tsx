@@ -50,9 +50,12 @@ export const MeetingsViewError = () => {
 export const CreateMeetingDialog = ({
   open,
   onOpenChange,
+  showTrigger = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Set false when the caller renders its own button to open this dialog. */
+  showTrigger?: boolean;
 }) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -77,10 +80,12 @@ export const CreateMeetingDialog = ({
       title="Schedule meeting"
       description="Set up a new meeting and invite participants"
       trigger={
-        <Button>
-          <PlusIcon className="size-4" />
-          New meeting
-        </Button>
+        showTrigger ? (
+          <Button>
+            <PlusIcon className="size-4" />
+            New meeting
+          </Button>
+        ) : undefined
       }
       open={open}
       onOpenChange={onOpenChange}
@@ -167,7 +172,7 @@ export const MeetingsView = () => {
       <div className="flex flex-col gap-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Meetings</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
             <p className="text-sm text-muted-foreground">
               Schedule and manage your meetings
             </p>
@@ -188,12 +193,12 @@ export const MeetingsView = () => {
           />
         ) : (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3">
               <div className="relative max-w-sm flex-1">
                 <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search meetings by title..."
-                  className="pl-8 pr-8"
+                  className="border-none bg-background pl-8 pr-8 shadow-none"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />

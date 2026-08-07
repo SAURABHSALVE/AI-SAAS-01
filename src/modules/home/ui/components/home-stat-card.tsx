@@ -12,7 +12,7 @@ interface HomeStatCardProps {
 
 export const HomeStatCard = ({ label, value, icon: Icon, live }: HomeStatCardProps) => {
   return (
-    <Card>
+    <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardContent className="flex items-center gap-3 p-4">
         <div
           className={cn(

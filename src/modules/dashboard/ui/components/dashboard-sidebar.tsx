@@ -49,14 +49,15 @@ export const DashboardSidebar = () => {
   return (
     <Sidebar>
       <SidebarHeader className="text-sidebar-accent-foreground">
-        <Link href="/" className="flex items-center gap-2 px-2 pt-2">
+        <Link href="/" className="flex items-center gap-2.5 px-2 pt-2">
           <Image
             src="/logo.svg"
-            width={36}
-            height={36}
+            width={32}
+            height={32}
             alt="Meet.AI"
+            className="drop-shadow-[0_0_12px_var(--color-sidebar-accent)]"
           />
-          <p className="text-2xl font-semibold">Meet.AI</p>
+          <p className="text-xl font-semibold tracking-tight">Meet.AI</p>
         </Link>
       </SidebarHeader>
 
@@ -68,24 +69,31 @@ export const DashboardSidebar = () => {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {firstSection.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    className={cn(
-                      "h-10 border border-transparent",
-                      pathname === item.href &&
-                        "bg-sidebar-accent border-border"
-                    )}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="size-5" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {firstSection.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className={cn(
+                        "relative h-10 border border-transparent transition-colors",
+                        isActive
+                          ? "bg-sidebar-accent border-border font-medium"
+                          : "hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-accent-foreground" />
+                        )}
+                        <item.icon className="size-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -97,24 +105,31 @@ export const DashboardSidebar = () => {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {secondSection.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    className={cn(
-                      "h-10 border border-transparent",
-                      pathname === item.href &&
-                        "bg-sidebar-accent border-border"
-                    )}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="size-5" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {secondSection.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className={cn(
+                        "relative h-10 border border-transparent transition-colors",
+                        isActive
+                          ? "bg-sidebar-accent border-border font-medium"
+                          : "hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-accent-foreground" />
+                        )}
+                        <item.icon className="size-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

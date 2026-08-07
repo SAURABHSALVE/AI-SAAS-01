@@ -91,8 +91,16 @@ export const HomeView = ({ userName }: HomeViewProps) => {
           />
         </div>
 
-        <CreateMeetingDialog open={createMeetingOpen} onOpenChange={setCreateMeetingOpen} />
-        <CreateAgentDialog open={createAgentOpen} onOpenChange={setCreateAgentOpen} />
+        <CreateMeetingDialog
+          open={createMeetingOpen}
+          onOpenChange={setCreateMeetingOpen}
+          showTrigger={false}
+        />
+        <CreateAgentDialog
+          open={createAgentOpen}
+          onOpenChange={setCreateAgentOpen}
+          showTrigger={false}
+        />
       </div>
     );
   }
@@ -100,26 +108,35 @@ export const HomeView = ({ userName }: HomeViewProps) => {
   return (
     <div className="flex-1 p-4 md:p-8">
       <div className="flex flex-col gap-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <GeneratedAvatar seed={userName} variant="initials" className="size-11" />
-            <div>
-              <h1 className="text-2xl font-semibold">Welcome back, {firstName}</h1>
-              <p className="text-sm text-muted-foreground">
-                Here&apos;s what&apos;s happening across your meetings and agents.
-              </p>
+        <div className="relative overflow-hidden rounded-2xl border bg-linear-to-br from-primary/10 via-card to-card p-6">
+          <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <GeneratedAvatar
+                seed={userName}
+                variant="initials"
+                className="size-12 ring-4 ring-background"
+              />
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight">
+                  Welcome back, {firstName}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Here&apos;s what&apos;s happening across your meetings and agents.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setCreateAgentOpen(true)}>
-              <BotIcon className="size-4" />
-              New agent
-            </Button>
-            <Button onClick={() => setCreateMeetingOpen(true)}>
-              <VideoIcon className="size-4" />
-              New meeting
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="bg-background" onClick={() => setCreateAgentOpen(true)}>
+                <BotIcon className="size-4" />
+                New agent
+              </Button>
+              <Button className="shadow-sm" onClick={() => setCreateMeetingOpen(true)}>
+                <VideoIcon className="size-4" />
+                New meeting
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -132,13 +149,13 @@ export const HomeView = ({ userName }: HomeViewProps) => {
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">{meetingsSectionTitle}</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{meetingsSectionTitle}</h2>
             <Link
               href="/meetings"
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              className="group/link flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
             >
               View all
-              <ArrowRightIcon className="size-3.5" />
+              <ArrowRightIcon className="size-3.5 transition-transform group-hover/link:translate-x-0.5" />
             </Link>
           </div>
 
@@ -168,13 +185,13 @@ export const HomeView = ({ userName }: HomeViewProps) => {
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Your agents</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Your agents</h2>
             <Link
               href="/agents"
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              className="group/link flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
             >
               View all
-              <ArrowRightIcon className="size-3.5" />
+              <ArrowRightIcon className="size-3.5 transition-transform group-hover/link:translate-x-0.5" />
             </Link>
           </div>
 
@@ -203,8 +220,16 @@ export const HomeView = ({ userName }: HomeViewProps) => {
         </div>
       </div>
 
-      <CreateMeetingDialog open={createMeetingOpen} onOpenChange={setCreateMeetingOpen} />
-      <CreateAgentDialog open={createAgentOpen} onOpenChange={setCreateAgentOpen} />
+      <CreateMeetingDialog
+        open={createMeetingOpen}
+        onOpenChange={setCreateMeetingOpen}
+        showTrigger={false}
+      />
+      <CreateAgentDialog
+        open={createAgentOpen}
+        onOpenChange={setCreateAgentOpen}
+        showTrigger={false}
+      />
     </div>
   );
 };

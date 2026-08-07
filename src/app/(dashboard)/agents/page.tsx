@@ -23,7 +23,9 @@ const Page = async () => {
   }
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(trpc.agents.getMany.queryOptions({}));
+  // Must match AgentsView's default useAgentFilters() input ({ scope: "mine" })
+  // exactly, or the query keys differ and this prefetch is never reused.
+  await queryClient.prefetchQuery(trpc.agents.getMany.queryOptions({ scope: "mine" }));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

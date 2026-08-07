@@ -8,6 +8,7 @@ service isn't running.
 """
 
 import asyncio
+import logging
 import os
 from contextlib import suppress
 
@@ -18,6 +19,8 @@ from vision_agents.core import Agent, User
 from vision_agents.plugins import gemini, getstream
 
 load_dotenv()
+
+logger = logging.getLogger("meet-ai-voice-agent")
 
 app = FastAPI(title="meet-ai-voice-agent")
 
@@ -30,6 +33,12 @@ CALL_TYPE = "default"
 # event. See the README for why this exists instead of a native "call
 # ended" hook.
 SAFETY_TIMEOUT_SECONDS = 3 * 60 * 60
+# How often to check whether Gemini Live is still connected. Gemini Live
+# enforces a maximum session duration and closes the socket itself when it's
+# reached (sending a "GoAway" first) — polling this lets us leave the call
+# cleanly right when that happens, instead of relying only on the safety
+# timeout above.
+CONNECTION_POLL_SECONDS = 5
 
 
 class JoinRequest(BaseModel):
@@ -84,10 +93,23 @@ async def _run_agent_session(payload: JoinRequest) -> None:
         if payload.greeting:
             await agent.simple_response(text=payload.greeting)
 
-        # Stay connected until /leave cancels this task or the safety
-        # timeout elapses.
+        # Stay connected until /leave cancels this task, Gemini Live's own
+        # session-duration limit disconnects us, or the safety timeout
+        # elapses. Without this poll, a disconnect goes unnoticed and the
+        # SDK's video-frame sender keeps retrying against the dead socket
+        # every frame, forever.
+        elapsed = 0
         with suppress(asyncio.CancelledError):
-            await asyncio.sleep(SAFETY_TIMEOUT_SECONDS)
+            while elapsed < SAFETY_TIMEOUT_SECONDS:
+                await asyncio.sleep(CONNECTION_POLL_SECONDS)
+                elapsed += CONNECTION_POLL_SECONDS
+                if not agent.llm.connected:
+                    logger.info(
+                        "meeting %s: Gemini Live disconnected (likely hit its "
+                        "max session duration) — leaving the call",
+                        payload.meetingId,
+                    )
+                    break
 
 
 @app.post("/join")
