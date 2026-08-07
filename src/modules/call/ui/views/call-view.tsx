@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   type Call,
   CallingState,
@@ -10,11 +11,13 @@ import {
   useCallStateHooks,
   useStreamVideoClient,
 } from "@stream-io/video-react-sdk";
+import { toast } from "sonner";
 
 import { LoadingState } from "@/components/loading-state";
 import { CallActive } from "@/modules/call/ui/components/call-active";
 import { CallEnded } from "@/modules/call/ui/components/call-ended";
 import { CallLobby } from "@/modules/call/ui/components/call-lobby";
+import { useTRPC } from "@/trpc/client";
 
 interface CallViewProps {
   meetingId: string;
@@ -27,8 +30,20 @@ const CallUI = ({ meetingId, meetingTitle }: CallViewProps) => {
   const callingState = useCallCallingState();
   const [hasLeft, setHasLeft] = useState(false);
 
+  const trpc = useTRPC();
+  const triggerAgentJoin = useMutation(
+    trpc.meetings.triggerAgentJoin.mutationOptions({
+      onSuccess: (result) => {
+        if (!result.joined && result.reason === "service-unreachable") {
+          toast.info("This meeting has an AI agent, but the voice-agent service isn't running.");
+        }
+      },
+    })
+  );
+
   const handleJoin = () => {
     void call?.join({ create: true });
+    triggerAgentJoin.mutate({ meetingId });
   };
 
   const handleLeave = () => {
