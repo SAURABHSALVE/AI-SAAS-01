@@ -48,13 +48,33 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Empty message" }, { status: 400 });
   }
 
-  await db.insert(meetingChatMessages).values({
-    meetingId,
-    role: "user",
-    content: question,
-  });
+  const MAX_MESSAGE_LENGTH = 2000;
+  if (question.length > MAX_MESSAGE_LENGTH) {
+    return NextResponse.json(
+      { error: `Message is too long (max ${MAX_MESSAGE_LENGTH} characters)` },
+      { status: 400 }
+    );
+  }
 
-  const chunks = await searchTranscript(meetingId, question);
+  let chunks: Awaited<ReturnType<typeof searchTranscript>>;
+  try {
+    chunks = await searchTranscript(meetingId, question);
+  } catch (error) {
+    console.error("Failed to search transcript:", error);
+    return NextResponse.json(
+      { error: "Failed to search the meeting transcript. Please try again." },
+      { status: 500 }
+    );
+  }
+
+  const [userMessage] = await db
+    .insert(meetingChatMessages)
+    .values({
+      meetingId,
+      role: "user",
+      content: question,
+    })
+    .returning({ id: meetingChatMessages.id });
 
   const context = chunks.length
     ? chunks
@@ -72,23 +92,40 @@ export async function POST(request: Request, { params }: Params) {
     context,
   ].join("\n");
 
-  const result = streamText({
-    model: google(GEMINI_CHAT_MODEL),
-    system: systemPrompt,
-    messages: await convertToModelMessages(messages),
-    onFinish: async ({ text }) => {
-      await db.insert(meetingChatMessages).values({
-        meetingId,
-        role: "assistant",
-        content: text,
-        citations: chunks.map((chunk) => ({
-          chunkId: chunk.id,
-          speakerName: chunk.speakerName,
-          quote: chunk.content,
-        })),
-      });
-    },
-  });
+  try {
+    const result = streamText({
+      model: google(GEMINI_CHAT_MODEL),
+      system: systemPrompt,
+      messages: await convertToModelMessages(messages),
+      onFinish: async ({ text }) => {
+        await db.insert(meetingChatMessages).values({
+          meetingId,
+          role: "assistant",
+          content: text,
+          citations: chunks.map((chunk) => ({
+            chunkId: chunk.id,
+            speakerName: chunk.speakerName,
+            quote: chunk.content,
+          })),
+        });
+      },
+      onError: async ({ error }) => {
+        console.error("streamText error:", error);
+        if (userMessage) {
+          await db.delete(meetingChatMessages).where(eq(meetingChatMessages.id, userMessage.id));
+        }
+      },
+    });
 
-  return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("Failed to generate chat response:", error);
+    if (userMessage) {
+      await db.delete(meetingChatMessages).where(eq(meetingChatMessages.id, userMessage.id));
+    }
+    return NextResponse.json(
+      { error: "Failed to generate a response. Please try again." },
+      { status: 500 }
+    );
+  }
 }
