@@ -55,6 +55,9 @@ GOOGLE_GENERATIVE_AI_API_KEY=...
 # Inngest (dev server picks these up automatically; set for prod)
 INNGEST_EVENT_KEY=...
 INNGEST_SIGNING_KEY=...
+
+# Voice agent service (optional — see step 7)
+AGENT_SERVICE_URL=http://localhost:8000
 ```
 
 If you're testing on a device other than `localhost` (e.g. via ngrok), add
@@ -107,6 +110,16 @@ ngrok origin to `trustedOrigins` in `src/lib/auth.ts` (see step 2). Note that
 free ngrok URLs change every time the tunnel restarts, so both of these need
 to be updated again after a restart.
 
+## 7. Voice agents (optional)
+
+Agents can join meetings and talk, using Gemini Live via Stream's
+open-source [Vision Agents](https://github.com/GetStream/Vision-Agents)
+framework. This runs as a separate Python service — see
+[`services/voice-agent/README.md`](services/voice-agent/README.md) for
+setup. It's a fourth local process alongside `next dev`, `inngest-cli dev`,
+and `ngrok`, and it's entirely optional: meetings work fine without it, the
+agent just won't join/speak.
+
 ## Using the app
 
 1. **Sign up / sign in** — email/password, GitHub, or Google.
@@ -115,7 +128,9 @@ to be updated again after a restart.
 3. **Schedule a meeting** — pick a title, date/time, duration, and optionally
    an agent.
 4. **Join the call** — from the meeting page, click "Join Call". Stream Video
-   handles the call UI; transcription is turned on automatically.
+   handles the call UI; transcription is turned on automatically. If the
+   meeting has an agent attached and the voice-agent service is running, the
+   agent joins and speaks its configured greeting.
 5. **End the call** — once the meeting ends, Stream finalizes the recording
    and transcript, then fires a webhook that queues an Inngest job.
 6. **View insights** — on the meeting page, the "Insights" tab shows a
@@ -142,7 +157,8 @@ to be updated again after a restart.
 
 ## Known limitations
 
-- AI agents currently do not speak or join calls with a live voice — that
-  requires a real-time Gemini Live audio integration, which is not yet built.
-  Agents only provide instructions/context used elsewhere (e.g. framing for
-  future automated participation).
+- The voice-agent service (step 7) doesn't yet react to a human leaving the
+  call — the agent stays connected until explicitly stopped or a 3-hour
+  safety timeout elapses. See
+  [`services/voice-agent/README.md`](services/voice-agent/README.md) for
+  details.
