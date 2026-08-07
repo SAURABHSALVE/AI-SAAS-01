@@ -56,5 +56,21 @@ export const generateMeetingInsights = async (
     throw new Error("Gemini returned an empty response while generating meeting insights");
   }
 
-  return insightsResultSchema.parse(JSON.parse(raw));
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      "Gemini returned a malformed or truncated response while generating meeting insights"
+    );
+  }
+
+  const result = insightsResultSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error(
+      "Gemini's response did not match the expected meeting insights format"
+    );
+  }
+
+  return result.data;
 };
