@@ -47,7 +47,7 @@ export const MeetingsViewError = () => {
   );
 };
 
-const CreateMeetingDialog = ({
+export const CreateMeetingDialog = ({
   open,
   onOpenChange,
 }: {

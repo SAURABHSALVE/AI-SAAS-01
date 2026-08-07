@@ -24,7 +24,10 @@ const toRelativeSeconds = (ts: number | undefined, transcriptStartMs: number) =>
 
 export async function POST(request: Request) {
   const signature = request.headers.get("x-signature");
-  const rawBody = await request.text();
+  // Stream may gzip-compress webhook payloads; reading as a Buffer (not
+  // .text()) keeps the binary bytes intact so verifyAndParseWebhook's
+  // gzip-magic-byte detection and HMAC check see the exact bytes Stream signed.
+  const rawBody = Buffer.from(await request.arrayBuffer());
 
   if (!signature) {
     return NextResponse.json({ error: "Missing signature" }, { status: 401 });
