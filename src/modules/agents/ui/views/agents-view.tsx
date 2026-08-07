@@ -47,7 +47,7 @@ export const AgentsViewError = () => {
   );
 };
 
-const CreateAgentDialog = ({
+export const CreateAgentDialog = ({
   open,
   onOpenChange,
 }: {
