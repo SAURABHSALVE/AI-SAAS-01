@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GeneratedAvatar } from "@/components/ui/generated-avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTRPC } from "@/trpc/client";
 import { getJoinLabel } from "@/modules/meetings/lib/get-join-label";
 import { getMeetingStatus } from "@/modules/meetings/lib/get-meeting-status";
@@ -45,6 +46,9 @@ import { DeleteMeetingDialog } from "@/modules/meetings/ui/components/delete-mee
 import { MeetingForm } from "@/modules/meetings/ui/components/meeting-form";
 import { MeetingRecordings } from "@/modules/meetings/ui/components/meeting-recordings";
 import { MeetingStatusBadge } from "@/modules/meetings/ui/components/meeting-status-badge";
+import { MeetingInsightsDashboard } from "@/modules/intelligence/ui/views/meeting-insights-dashboard";
+import { MeetingChatPanel } from "@/modules/intelligence/ui/views/meeting-chat-panel";
+import { MeetingTranscriptView } from "@/modules/intelligence/ui/views/meeting-transcript-view";
 
 interface Props {
   meetingId: string;
@@ -194,6 +198,18 @@ export const MeetingIdView = ({ meetingId }: Props) => {
               </Link>
             </Button>
 
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="overview">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsTrigger value="chat">Chat</TabsTrigger>
+            <TabsTrigger value="transcript">Transcript</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4 pt-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
                 <CalendarIcon className="size-4 text-muted-foreground" />
@@ -244,8 +260,20 @@ export const MeetingIdView = ({ meetingId }: Props) => {
             </div>
 
             {status !== "upcoming" && <MeetingRecordings meetingId={meetingId} />}
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="insights" className="pt-4">
+            <MeetingInsightsDashboard meetingId={meetingId} />
+          </TabsContent>
+
+          <TabsContent value="chat" className="pt-4">
+            <MeetingChatPanel meetingId={meetingId} />
+          </TabsContent>
+
+          <TabsContent value="transcript" className="pt-4">
+            <MeetingTranscriptView meetingId={meetingId} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <ResponsiveDialog

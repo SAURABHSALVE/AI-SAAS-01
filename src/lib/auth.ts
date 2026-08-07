@@ -7,6 +7,7 @@ export const auth = betterAuth({
     trustedOrigins: [
       process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
       "http://localhost:3001",
+      "https://unreliable-subalgebraical-pamula.ngrok-free.dev",
     ],
     socialProviders: {
         github: { 
@@ -29,4 +30,4 @@ export const auth = betterAuth({
         },
 
     }),
-});
+});

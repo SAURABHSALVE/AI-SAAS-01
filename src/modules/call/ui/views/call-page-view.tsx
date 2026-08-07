@@ -46,7 +46,12 @@ export const CallPageView = ({
   );
 
   return (
-    <StreamVideoProvider userId={userId} userName={userName} userImage={userImage}>
+    <StreamVideoProvider
+      userId={userId}
+      userName={userName}
+      userImage={userImage}
+      meetingId={meetingId}
+    >
       <CallView meetingId={meetingId} meetingTitle={meeting.title} />
     </StreamVideoProvider>
   );

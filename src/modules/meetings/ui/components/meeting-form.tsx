@@ -55,7 +55,9 @@ export const MeetingForm = ({
   pendingLabel,
 }: MeetingFormProps) => {
   const trpc = useTRPC();
-  const { data: agents } = useQuery(trpc.agents.getMany.queryOptions({}));
+  const { data: agents } = useQuery(
+    trpc.agents.getMany.queryOptions({ scope: "all" })
+  );
 
   const form = useForm<MeetingFormValues>({
     resolver: zodResolver(meetingSchema),

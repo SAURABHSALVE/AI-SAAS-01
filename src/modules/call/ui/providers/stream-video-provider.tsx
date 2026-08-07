@@ -11,6 +11,7 @@ interface StreamVideoProviderProps {
   userId: string;
   userName: string;
   userImage?: string | null;
+  meetingId: string;
   children: React.ReactNode;
 }
 
@@ -18,6 +19,7 @@ export const StreamVideoProvider = ({
   userId,
   userName,
   userImage,
+  meetingId,
   children,
 }: StreamVideoProviderProps) => {
   const trpc = useTRPC();
@@ -32,7 +34,7 @@ export const StreamVideoProvider = ({
         name: userName,
         image: userImage ?? undefined,
       },
-      tokenProvider: () => generateToken.mutateAsync(),
+      tokenProvider: () => generateToken.mutateAsync({ meetingId }),
     });
 
     setClient(videoClient);
@@ -42,7 +44,7 @@ export const StreamVideoProvider = ({
       void videoClient.disconnectUser();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, userName, userImage]);
+  }, [userId, userName, userImage, meetingId]);
 
   if (!client) {
     return (

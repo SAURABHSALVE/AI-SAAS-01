@@ -1,164 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  BotIcon,
-  Loader2Icon,
-  MoreVerticalIcon,
-  PencilIcon,
-  SearchIcon,
-  TrashIcon,
-} from "lucide-react";
+import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { z } from "zod";
 
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
 import { ResponsiveDialog } from "@/components/responsive-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import { useTRPC } from "@/trpc/client";
-import { agentSchema } from "@/modules/agents/schemas";
-import { AgentForm } from "@/modules/agents/ui/components/agent-form";
-import { DeleteAgentDialog } from "@/modules/agents/ui/components/delete-agent-dialog";
+import { AGENT_TEMPLATES } from "@/modules/agents/constants";
+import { agentSchema, type AgentFormValues } from "@/modules/agents/schemas";
 import type { AgentGetMany } from "@/modules/agents/types";
-
-const AgentCreateDialog = ({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) => {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-
-  const createAgent = useMutation(
-    trpc.agents.create.mutationOptions({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: trpc.agents.getMany.queryKey(),
-        });
-
-        toast.success("Agent created");
-        onOpenChange(false);
-      },
-      onError: (error) => {
-        toast.error(error.message || "Failed to create agent");
-      },
-    })
-  );
-
-  const onSubmit = (values: z.infer<typeof agentSchema>) => {
-    createAgent.mutate(values);
-  };
-
-  return (
-    <ResponsiveDialog
-      title="Create agent"
-      description="Create a new agent"
-      trigger={<Button>Create agent</Button>}
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <AgentForm
-        onSubmit={onSubmit}
-        onCancel={() => onOpenChange(false)}
-        isPending={createAgent.isPending}
-        submitLabel="Create agent"
-        pendingLabel="Creating..."
-      />
-    </ResponsiveDialog>
-  );
-};
-
-interface AgentCardProps {
-  agent: AgentGetMany;
-  onEdit: () => void;
-  onDelete: () => void;
-}
-
-const AgentCard = ({ agent, onEdit, onDelete }: AgentCardProps) => {
-  return (
-    <Card className="h-full transition-colors hover:border-primary/50 hover:shadow-sm">
-      <CardHeader className="flex-row items-start gap-4 space-y-0">
-        <GeneratedAvatar
-          seed={agent.name}
-          variant="botttsNeutral"
-          className="size-10"
-        />
-        <div className="min-w-0 flex-1 space-y-1">
-          <Link
-            href={`/agents/${agent.id}`}
-            className="line-clamp-1 font-medium underline-offset-4 hover:underline"
-          >
-            <CardTitle className="truncate">{agent.name}</CardTitle>
-          </Link>
-          {agent.description ? (
-            <CardDescription className="line-clamp-2">
-              {agent.description}
-            </CardDescription>
-          ) : (
-            <CardDescription className="italic">
-              No description
-            </CardDescription>
-          )}
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 shrink-0"
-              aria-label="Agent actions"
-            >
-              <MoreVerticalIcon className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <PencilIcon className="size-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={onDelete}>
-              <TrashIcon className="size-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardHeader>
-    </Card>
-  );
-};
+import { AgentCard } from "@/modules/agents/ui/components/agent-card";
+import { AgentCategoryFilter } from "@/modules/agents/ui/components/agent-category-filter";
+import { AgentForm } from "@/modules/agents/ui/components/agent-form";
+import { AgentScopeTabs } from "@/modules/agents/ui/components/agent-scope-tabs";
+import { AgentsEmptyState } from "@/modules/agents/ui/components/agents-empty-state";
+import { DeleteAgentDialog } from "@/modules/agents/ui/components/delete-agent-dialog";
+import { useAgentFilters } from "@/modules/agents/ui/hooks/use-agent-filters";
 
 export const AgentsViewLoading = () => {
   return (
@@ -178,18 +47,105 @@ export const AgentsViewError = () => {
   );
 };
 
+const CreateAgentDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [templateIndex, setTemplateIndex] = useState<number | null>(null);
+
+  const createAgent = useMutation(
+    trpc.agents.create.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.agents.getMany.queryKey(),
+        });
+        toast.success("Agent created");
+        setTemplateIndex(null);
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to create agent");
+      },
+    })
+  );
+
+  const template = templateIndex !== null ? AGENT_TEMPLATES[templateIndex] : undefined;
+
+  return (
+    <ResponsiveDialog
+      title="Create agent"
+      description="Create a new AI agent"
+      trigger={
+        <Button>
+          <PlusIcon className="size-4" />
+          Create agent
+        </Button>
+      }
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setTemplateIndex(null);
+        onOpenChange(next);
+      }}
+    >
+      <div className="space-y-3 px-4 pt-4">
+        <p className="text-sm font-medium text-muted-foreground">
+          Start from a template (optional)
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {AGENT_TEMPLATES.map((t, index) => (
+            <Badge
+              key={t.name}
+              variant={templateIndex === index ? "default" : "outline"}
+              className="cursor-pointer font-normal"
+              onClick={() => setTemplateIndex(index)}
+            >
+              {t.name}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <AgentForm
+        key={templateIndex ?? "blank"}
+        defaultValues={template}
+        onSubmit={(values: AgentFormValues) => createAgent.mutate(values)}
+        onCancel={() => onOpenChange(false)}
+        isPending={createAgent.isPending}
+        submitLabel="Create agent"
+        pendingLabel="Creating..."
+      />
+    </ResponsiveDialog>
+  );
+};
+
 export const AgentsView = () => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const {
+    search,
+    setSearch,
+    category,
+    setCategory,
+    scope,
+    setScope,
+    debouncedSearch,
+  } = useAgentFilters();
+
   const { data: agents, isFetching } = useQuery({
     ...trpc.agents.getMany.queryOptions({
       search: debouncedSearch || undefined,
+      category: category === "all" ? undefined : category,
+      scope,
     }),
     placeholderData: keepPreviousData,
   });
-  const [open, setOpen] = useState(false);
+
+  const [createOpen, setCreateOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<AgentGetMany | null>(null);
   const [deletingAgent, setDeletingAgent] = useState<AgentGetMany | null>(null);
 
@@ -227,27 +183,9 @@ export const AgentsView = () => {
     return <AgentsViewLoading />;
   }
 
-  if (agents.length === 0 && !search) {
-    return (
-      <div className="flex-1 p-4 md:p-8">
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <BotIcon />
-            </EmptyMedia>
-            <EmptyTitle>No agents yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t created any agents. Create one to get started.
-            </EmptyDescription>
-
-            <div className="mt-4">
-              <AgentCreateDialog open={open} onOpenChange={setOpen} />
-            </div>
-          </EmptyHeader>
-        </Empty>
-      </div>
-    );
-  }
+  const hasNoFilters = !search && category === "all";
+  const hasNoAgentsAtAll = agents.length === 0 && hasNoFilters && scope === "mine";
+  const hasNoPublicAgentsAtAll = agents.length === 0 && hasNoFilters && scope === "public";
 
   return (
     <div className="flex-1 p-4 md:p-8">
@@ -256,69 +194,86 @@ export const AgentsView = () => {
           <div>
             <h1 className="text-2xl font-semibold">Agents</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your AI agents
+              Manage your AI agents and browse the public gallery
             </p>
           </div>
 
-          <AgentCreateDialog open={open} onOpenChange={setOpen} />
+          <CreateAgentDialog open={createOpen} onOpenChange={setCreateOpen} />
         </div>
 
-        <div className="flex items-center gap-x-3">
-          <div className="relative max-w-sm flex-1">
-            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Filter agents by name..."
-              className="pl-8 pr-8"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {isFetching && (
-              <Loader2Icon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-            )}
-          </div>
-          <span className="hidden text-sm text-muted-foreground sm:inline">
-            {agents.length} agent{agents.length === 1 ? "" : "s"}
-          </span>
-        </div>
+        <AgentScopeTabs value={scope} onChange={setScope} />
 
-        {agents.length === 0 ? (
-          <Empty className="border">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <SearchIcon />
-              </EmptyMedia>
-              <EmptyTitle>No agents found</EmptyTitle>
-              <EmptyDescription>
-                No agents match &quot;{search}&quot;. Try a different search.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+        {hasNoAgentsAtAll ? (
+          <AgentsEmptyState
+            variant="no-agents"
+            action={
+              <Button onClick={() => setCreateOpen(true)}>
+                <PlusIcon className="size-4" />
+                Create agent
+              </Button>
+            }
+          />
+        ) : hasNoPublicAgentsAtAll ? (
+          <AgentsEmptyState variant="no-public-agents" />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {agents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                onEdit={() => setEditingAgent(agent)}
-                onDelete={() => setDeletingAgent(agent)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="relative max-w-sm flex-1">
+                <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search agents by name..."
+                  className="pl-8 pr-8"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {isFetching && (
+                  <Loader2Icon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                )}
+              </div>
+
+              <AgentCategoryFilter value={category} onChange={setCategory} />
+            </div>
+
+            {agents.length === 0 ? (
+              <AgentsEmptyState variant="no-results" search={search} />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {agents.map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onEdit={() => setEditingAgent(agent)}
+                    onDelete={() => setDeletingAgent(agent)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
       <ResponsiveDialog
         title="Edit agent"
-        description="Update this agent's details"
+        description="Update this agent's configuration"
         open={!!editingAgent}
-        onOpenChange={(isOpen) => !isOpen && setEditingAgent(null)}
+        onOpenChange={(open) => !open && setEditingAgent(null)}
       >
         {editingAgent && (
           <AgentForm
             defaultValues={{
               name: editingAgent.name,
+              role: editingAgent.role,
               description: editingAgent.description ?? "",
-              instructions: editingAgent.instructions ?? "",
+              category: editingAgent.category,
+              systemPrompt: editingAgent.systemPrompt,
+              personality: editingAgent.personality ?? "",
+              greeting: editingAgent.greeting ?? "",
+              suggestedQuestions: editingAgent.suggestedQuestions,
+              model: editingAgent.model,
+              temperature: editingAgent.temperature,
+              voice: editingAgent.voice,
+              avatar: editingAgent.avatar ?? "",
+              visibility: editingAgent.visibility,
             }}
             onSubmit={(values: z.infer<typeof agentSchema>) =>
               updateAgent.mutate({ id: editingAgent.id, ...values })
@@ -333,7 +288,7 @@ export const AgentsView = () => {
 
       <DeleteAgentDialog
         open={!!deletingAgent}
-        onOpenChange={(isOpen) => !isOpen && setDeletingAgent(null)}
+        onOpenChange={(open) => !open && setDeletingAgent(null)}
         agentName={deletingAgent?.name ?? ""}
         onConfirm={() => deletingAgent && removeAgent.mutate({ id: deletingAgent.id })}
         isPending={removeAgent.isPending}
