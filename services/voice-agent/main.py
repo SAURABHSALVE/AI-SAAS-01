@@ -59,13 +59,22 @@ async def _run_agent_session(payload: JoinRequest) -> None:
         edge=getstream.Edge(),
         agent_user=User(name=payload.name, id=payload.agentUserId),
         instructions=_build_instructions(payload.systemPrompt, payload.personality),
-        # NOTE: verify `voice`/`model`/`temperature` kwargs against the
-        # installed vision-agents version — pin these against
-        # `gemini.Realtime`'s real signature before relying on them.
+        # `gemini.Realtime` only takes model/config/http_options/client/api_key
+        # directly — voice and temperature live inside the LiveConnectConfigDict
+        # `config`, mirroring the raw google-genai Live API shape. `payload.model`
+        # ("gemini-2.5-flash"/"-pro") is the agent's *text* model for
+        # insights/chat and is NOT Live-capable, so it's intentionally not
+        # passed here — this lets vision-agents use its own Live-capable
+        # default model instead.
         llm=gemini.Realtime(
-            voice=payload.voice,
-            model=payload.model,
-            temperature=payload.temperature,
+            config={
+                "temperature": payload.temperature,
+                "speech_config": {
+                    "voice_config": {
+                        "prebuilt_voice_config": {"voice_name": payload.voice}
+                    }
+                },
+            },
         ),
     )
 
