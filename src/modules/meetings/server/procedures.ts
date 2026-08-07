@@ -159,6 +159,69 @@ export const meetingsRouter = createTRPCRouter({
       });
     }),
 
+  triggerAgentJoin: protectedProcedure
+    .input(z.object({ meetingId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const [meeting] = await db
+        .select({ id: meetings.id, agentId: meetings.agentId })
+        .from(meetings)
+        .where(and(eq(meetings.id, input.meetingId), eq(meetings.userId, ctx.userId)));
+
+      if (!meeting) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
+      }
+
+      if (!meeting.agentId) {
+        return { joined: false as const, reason: "no-agent" as const };
+      }
+
+      const [agent] = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.id, meeting.agentId));
+
+      if (!agent) {
+        return { joined: false as const, reason: "no-agent" as const };
+      }
+
+      const agentUserId = `agent-${agent.id}`;
+
+      await streamVideo.upsertUsers([
+        { id: agentUserId, name: agent.name, role: "admin" },
+      ]);
+
+      const agentServiceUrl = process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
+
+      try {
+        const response = await fetch(`${agentServiceUrl}/join`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            meetingId: input.meetingId,
+            agentUserId,
+            name: agent.name,
+            systemPrompt: agent.systemPrompt,
+            personality: agent.personality,
+            greeting: agent.greeting,
+            voice: agent.voice,
+            model: agent.model,
+            temperature: agent.temperature,
+          }),
+          signal: AbortSignal.timeout(3000),
+        });
+
+        if (!response.ok) {
+          return { joined: false as const, reason: "service-error" as const };
+        }
+
+        return { joined: true as const };
+      } catch {
+        // The voice-agent service is optional infrastructure — if it's down or
+        // unreachable, the human must still be able to join the call normally.
+        return { joined: false as const, reason: "service-unreachable" as const };
+      }
+    }),
+
   create: protectedProcedure
     .input(meetingSchema)
     .mutation(async ({ ctx, input }) => {
